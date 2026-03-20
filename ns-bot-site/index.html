@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NS Issue Bot — Command Console</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loading-msg">Parsing data…</p>
+  </div>
+</div>
+
+<header>
+  <div class="header-flag">⚑</div>
+  <h1>NS Issue Bot <span>Command Console</span></h1>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    <span id="header-info">No data loaded</span>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" data-tab="overview">Overview</div>
+  <div class="tab" data-tab="priorities">Priorities</div>
+  <div class="tab" data-tab="scorer">Issue Scorer</div>
+  <div class="tab" data-tab="setup">Setup</div>
+</nav>
+
+<main>
+
+  <!-- ══ OVERVIEW ══ -->
+  <div class="panel active" id="tab-overview">
+    <div class="card">
+      <div class="card-title">Data Source</div>
+      <div class="upload-zone" id="drop-zone">
+        <div class="upload-icon">📂</div>
+        <p>Drop <strong>ns_results.csv</strong> here, or click to select</p>
+        <p class="upload-sub">The file stays in your browser — nothing is uploaded to any server.</p>
+      </div>
+      <input type="file" id="file-input" accept=".csv">
+    </div>
+
+    <div class="grid-3" id="stat-boxes" style="display:none">
+      <div class="stat-box">
+        <span class="val" id="sb-issues">—</span>
+        <span class="lbl">Unique Issues</span>
+      </div>
+      <div class="stat-box">
+        <span class="val" id="sb-options">—</span>
+        <span class="lbl">Total Options</span>
+      </div>
+      <div class="stat-box">
+        <span class="val" id="sb-stats">—</span>
+        <span class="lbl">Census Stats Tracked</span>
+      </div>
+    </div>
+
+    <div class="card" id="top-picks-card" style="display:none">
+      <div class="card-title">Top Picks Preview — Current Priorities</div>
+      <div id="top-picks-body"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Priority Distribution</div>
+      <div class="grid-2">
+        <div>
+          <div class="section-label pos">▲ Maximize (&gt;0)</div>
+          <div id="pos-preview"></div>
+        </div>
+        <div>
+          <div class="section-label neg">▼ Minimize (&lt;0)</div>
+          <div id="neg-preview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PRIORITIES ══ -->
+  <div class="panel" id="tab-priorities">
+    <div class="card">
+      <div class="card-title">Priority Config Editor</div>
+      <div class="chip-row">
+        <div class="chip active-chip" data-filter="all">All</div>
+        <div class="chip" data-filter="pos">Maximize</div>
+        <div class="chip" data-filter="neg">Minimize</div>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="prio-search" placeholder="Filter stats…">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-amber" id="export-cfg-btn">⬇ Export priority.cfg</button>
+        <button class="btn btn-ghost" id="reset-prio-btn">↺ Reset to Default</button>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="prio-coverage" style="width:0%"></div>
+      </div>
+      <p id="prio-coverage-label" class="coverage-label">Coverage: — of — census stats configured</p>
+      <div id="priority-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ SCORER ══ -->
+  <div class="panel" id="tab-scorer">
+    <div class="card" id="scorer-upload-notice" style="display:none">
+      <div class="card-title">Load Data First</div>
+      <p class="muted">Go to the <strong class="amber">Overview</strong> tab and load <code>ns_results.csv</code> to use the scorer.</p>
+    </div>
+    <div id="scorer-content">
+      <div class="card">
+        <div class="card-title">Issue Lookup</div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="issue-search" placeholder="Search by issue number or title…">
+        </div>
+        <div class="chip-row" id="sort-chips">
+          <div class="chip active-chip" data-sort="num">By Number</div>
+          <div class="chip" data-sort="best">Best Score First</div>
+          <div class="chip" data-sort="worst">Worst Score First</div>
+        </div>
+        <div id="issue-results">
+          <div class="empty">Load ns_results.csv to see issues</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SETUP ══ -->
+  <div class="panel" id="tab-setup">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">.env Configuration</div>
+        <pre class="code-block"><span class="comment"># Required</span>
+<span class="key">NATION</span>=your_nation_name
+<span class="key">PASSWORD</span>=your_ns_password
+<span class="key">USER_AGENT</span>=YourBot/1.0 (contact@you.com)
+
+<span class="comment"># Optional</span>
+<span class="key">SLEEP_BETWEEN_REQUESTS</span>=10
+<span class="key">TEST_MODE</span>=false</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title">requirements.txt</div>
+        <pre class="code-block">requests
+beautifulsoup4
+lxml
+pandas
+numpy
+python-dotenv</pre>
+        <hr class="sep">
+        <div class="card-title">Install &amp; Run</div>
+        <pre class="code-block"><span class="comment"># Install deps</span>
+pip install -r requirements.txt
+
+<span class="comment"># Run once</span>
+python main.py
+
+<span class="comment"># Cron — daily at 8am</span>
+0 8 * * * cd /path/to/bot && python main.py</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">How Scoring Works</div>
+      <div class="explainer">
+        <p>The bot scores each issue option by looking up its census stat deltas in <code>ns_results.csv</code>, then combining them using the weights from <code>priority.cfg</code>.</p>
+        <pre class="code-block formula"><span class="comment">for each configured stat:</span>
+  norm   = delta / std_dev(stat)
+  dir    = norm × sign(priority_score)
+  weight = rank_by_abs_priority
+  score += weight × dir
+
+→ pick option with highest total score</pre>
+        <p>Stats with higher absolute priority values get more weight. Positive priority = want the stat to go up. Negative = want it to go down. Deltas are normalized by their standard deviation across all options.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">File Structure</div>
+      <pre class="code-block">project/
+├── <span class="key">main.py</span>           — bot logic
+├── <span class="key">priority.cfg</span>      — your stat priorities
+├── <span class="key">ns_results.csv</span>    — precomputed stat deltas
+├── <span class="key">.env</span>              — credentials (never commit!)
+├── <span class="key">requirements.txt</span>
+└── <span class="key">choices.ndjson</span>    — auto-created decision log</pre>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="js/priorities.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
