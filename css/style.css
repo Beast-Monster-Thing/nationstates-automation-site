@@ -472,6 +472,17 @@ main { padding: 32px; max-width: 1400px; margin: 0 auto; }
 .upload-zone strong { color: var(--amber); }
 .upload-sub { font-size: 12px !important; margin-top: 6px; }
 
+.loaded-notice {
+  padding: 12px 16px;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green);
+  margin-bottom: 0;
+}
+
 #file-input { display: none; }
 
 /* ── Log / Pick Rows ── */

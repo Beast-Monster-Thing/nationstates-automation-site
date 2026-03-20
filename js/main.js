@@ -1,8 +1,10 @@
 /**
  * main.js
- * Entry point: wires up tabs, file upload, chip filters,
- * search inputs, and export/reset buttons.
+ * Auto-loads ns_results.csv from the repo on page load.
+ * Manual upload zone remains as a fallback.
  */
+
+const CSV_URL = "ns_results.csv";
 
 // ── Loading overlay ──────────────────────────────────────────────────────────
 
@@ -31,75 +33,81 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
-// ── File Upload ───────────────────────────────────────────────────────────────
+// ── Auto-fetch CSV from repo ──────────────────────────────────────────────────
+
+function fetchCSV() {
+  showLoading("Loading ns_results.csv…");
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+    complete(results) {
+      processCSV(results);
+      onDataLoaded();
+      hideLoading();
+      document.getElementById("drop-zone").style.display = "none";
+      document.getElementById("csv-loaded-notice").style.display = "";
+    },
+    error(err) {
+      hideLoading();
+      console.warn("Auto-fetch failed, showing manual upload:", err);
+    },
+  });
+}
+
+// ── Manual upload (fallback) ──────────────────────────────────────────────────
 
 const dropZone  = document.getElementById("drop-zone");
 const fileInput = document.getElementById("file-input");
 
 dropZone.addEventListener("click", () => fileInput.click());
-
-dropZone.addEventListener("dragover", e => {
-  e.preventDefault();
-  dropZone.classList.add("drag");
-});
-
+dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag"); });
 dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
-
 dropZone.addEventListener("drop", e => {
   e.preventDefault();
   dropZone.classList.remove("drag");
   const f = e.dataTransfer.files[0];
-  if (f) loadCSV(f);
+  if (f) loadCSVFile(f);
 });
-
 fileInput.addEventListener("change", () => {
-  if (fileInput.files[0]) loadCSV(fileInput.files[0]);
+  if (fileInput.files[0]) loadCSVFile(fileInput.files[0]);
 });
 
-function loadCSV(file) {
+function loadCSVFile(file) {
   showLoading(`Parsing ${file.name}…`);
-  // Slight delay so the overlay renders before the (synchronous) parse blocks the thread
   setTimeout(() => {
     Papa.parse(file, {
       header: true,
       dynamicTyping: true,
       skipEmptyLines: true,
-      complete(results) {
-        processCSV(results);
-        onDataLoaded();
-        hideLoading();
-      },
-      error(err) {
-        hideLoading();
-        alert("CSV parse error: " + err.message);
-      },
+      complete(results) { processCSV(results); onDataLoaded(); hideLoading(); },
+      error(err) { hideLoading(); alert("CSV parse error: " + err.message); },
     });
   }, 50);
 }
 
+// ── Post-load UI update ───────────────────────────────────────────────────────
+
 function onDataLoaded() {
-  // Header status
   document.getElementById("header-info").textContent =
     `${allIssues.length} issues · ${csvData.length} options · ${statCols.length} stats`;
 
-  // Stat boxes
   document.getElementById("sb-issues").textContent  = allIssues.length;
   document.getElementById("sb-options").textContent = csvData.length;
   document.getElementById("sb-stats").textContent   = statCols.length;
   document.getElementById("stat-boxes").style.display = "";
 
-  // Re-render all data-dependent views
   updatePriorityCoverage();
   renderTopPicks();
   renderPriorityList();
 
-  // Scorer tab
   document.getElementById("scorer-upload-notice").style.display = "none";
   document.getElementById("scorer-content").style.display = "";
   renderIssueList();
 }
 
-// ── Priority Chips ────────────────────────────────────────────────────────────
+// ── Chips ─────────────────────────────────────────────────────────────────────
 
 document.querySelectorAll("[data-filter]").forEach(chip => {
   chip.addEventListener("click", () => {
@@ -110,8 +118,6 @@ document.querySelectorAll("[data-filter]").forEach(chip => {
   });
 });
 
-// ── Sort Chips ────────────────────────────────────────────────────────────────
-
 document.querySelectorAll("[data-sort]").forEach(chip => {
   chip.addEventListener("click", () => {
     document.querySelectorAll("[data-sort]").forEach(c => c.classList.remove("active-chip"));
@@ -121,10 +127,9 @@ document.querySelectorAll("[data-sort]").forEach(chip => {
   });
 });
 
-// ── Search Inputs ─────────────────────────────────────────────────────────────
+// ── Search ────────────────────────────────────────────────────────────────────
 
 document.getElementById("prio-search").addEventListener("input", renderPriorityList);
-
 document.getElementById("issue-search").addEventListener("input", () => {
   clearTimeout(window._issueSearchTimer);
   window._issueSearchTimer = setTimeout(renderIssueList, 200);
@@ -133,16 +138,12 @@ document.getElementById("issue-search").addEventListener("input", () => {
 // ── Buttons ───────────────────────────────────────────────────────────────────
 
 document.getElementById("export-cfg-btn").addEventListener("click", exportPriorityCfg);
-
 document.getElementById("reset-prio-btn").addEventListener("click", () => {
   if (!confirm("Reset all priorities to defaults?")) return;
   resetPriorities();
   renderPriorityList();
   updatePriorityCoverage();
-  if (csvData) {
-    renderTopPicks();
-    renderIssueList();
-  }
+  if (csvData) { renderTopPicks(); renderIssueList(); }
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -150,3 +151,4 @@ document.getElementById("reset-prio-btn").addEventListener("click", () => {
 renderPriorityPreviews();
 renderPriorityList();
 updatePriorityCoverage();
+fetchCSV();
