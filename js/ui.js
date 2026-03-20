@@ -1,33 +1,31 @@
 /**
- * ui.js
+ * ui.js — Sovereign Ledger Design
  * All DOM rendering: priority list, issue cards, option rows, mini-bars.
  */
 
-// ── Priority List ────────────────────────────────────────────────────────────
-
 let prioFilter = "all";
+
+// ── Priority List ─────────────────────────────────────────────────────────────
 
 function renderPriorityList() {
   const list   = document.getElementById("priority-list");
   const search = document.getElementById("prio-search").value.toLowerCase();
 
   let entries = Object.entries(priorities);
-
   if (prioFilter === "pos") entries = entries.filter(([, v]) => v >= 0);
   if (prioFilter === "neg") entries = entries.filter(([, v]) => v < 0);
   if (search) entries = entries.filter(([k]) => k.toLowerCase().includes(search));
-
   entries.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
 
   const maxAbs = Math.max(...Object.values(priorities).map(Math.abs), 1);
 
   list.innerHTML = entries.map(([name, score]) => {
-    const pct    = (Math.abs(score) / maxAbs) * 100;
-    const isPos  = score >= 0;
-    const col    = resolveCol(name);
+    const pct     = (Math.abs(score) / maxAbs) * 100;
+    const isPos   = score >= 0;
+    const col     = resolveCol(name);
     const noMatch = !col && csvData;
 
-    return `<div class="prow${noMatch ? ' unmatched' : ''}"${noMatch ? ' title="Not matched in loaded CSV"' : ''}>
+    return `<div class="prow${noMatch ? " unmatched" : ""}"${noMatch ? ` title="Not matched in loaded CSV"` : ""}>
       <div class="pname">${name}${noMatch ? " ⚠" : ""}</div>
       <div class="pbar-wrap">
         <div class="pbar ${isPos ? "pos" : "neg"}" style="width:${pct}%"></div>
@@ -44,10 +42,7 @@ function renderPriorityList() {
       priorities[name] = parseInt(e.target.value, 10);
       renderPriorityList();
       updatePriorityCoverage();
-      if (csvData) {
-        renderTopPicks();
-        renderIssueList();
-      }
+      if (csvData) { renderTopPicks(); renderIssueList(); }
     });
   });
 }
@@ -57,13 +52,12 @@ function updatePriorityCoverage() {
   const matched = names.filter(n => !!resolveCol(n)).length;
   const total   = statCols.length || names.length;
   const pct     = total ? Math.round((matched / total) * 100) : 0;
-
   document.getElementById("prio-coverage").style.width = pct + "%";
   document.getElementById("prio-coverage-label").textContent =
     `Coverage: ${names.length} stats configured · ${matched} matched to CSV columns`;
 }
 
-// ── Overview mini-bars ───────────────────────────────────────────────────────
+// ── Priority Overview Mini-Bars ───────────────────────────────────────────────
 
 function renderPriorityPreviews() {
   const pos    = DEFAULT_PRIORITIES.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
@@ -86,43 +80,42 @@ function renderPriorityPreviews() {
   document.getElementById("neg-preview").innerHTML = neg.map(makeBar).join("");
 }
 
-// ── Top Picks ────────────────────────────────────────────────────────────────
+// ── Top Picks ─────────────────────────────────────────────────────────────────
 
 function renderTopPicks() {
   if (!csvData) return;
   const card = document.getElementById("top-picks-card");
   const body = document.getElementById("top-picks-body");
-  card.style.display = "";
+  card.classList.remove("hidden");
 
   const preview = allIssues.slice(0, 12);
   body.innerHTML = preview.map(iss => {
     const scored = scoreIssue(iss);
     const best   = scored[0];
     if (!best) return "";
-    const sign = best.score >= 0 ? "+" : "";
-    const title = (iss.title || "").replace(/^#\d+\s*/, "").substring(0, 80);
-    return `<div class="log-entry">
-      <span class="li-id">#${iss.num}</span>
-      <span>${title}</span>
-      <span class="li-score">${sign}${best.score.toFixed(1)}</span>
+    const sign  = best.score >= 0 ? "+" : "";
+    const title = (iss.title || "").replace(/^#\d+\s*/, "").substring(0, 72);
+    return `<div class="pick-row">
+      <span class="pick-num">#${iss.num}</span>
+      <span class="pick-title">${title}</span>
+      <span class="pick-score">${sign}${best.score.toFixed(1)}</span>
     </div>`;
   }).join("");
 }
 
-// ── Issue List ───────────────────────────────────────────────────────────────
+// ── Issue List ────────────────────────────────────────────────────────────────
 
 let sortMode = "num";
 
 function renderIssueList() {
   if (!csvData) return;
-
   const container = document.getElementById("issue-results");
   const search    = (document.getElementById("issue-search").value || "").toLowerCase();
 
   let issues = allIssues.filter(iss => {
     if (!search) return true;
-    const t = (iss.title || "").toLowerCase();
-    return t.includes(search) || String(iss.num).includes(search);
+    return (iss.title || "").toLowerCase().includes(search) ||
+           String(iss.num).includes(search);
   });
 
   if (sortMode === "best")  issues = [...issues].sort((a, b) => bestScore(b) - bestScore(a));
@@ -131,18 +124,25 @@ function renderIssueList() {
   const shown = issues.slice(0, 50);
 
   if (!shown.length) {
-    container.innerHTML = '<div class="empty">No issues found</div>';
+    container.innerHTML = `<p class="text-center text-on-surface-variant text-sm py-10">No issues found</p>`;
     return;
   }
 
   container.innerHTML = shown.map(iss => {
     const bs   = bestScore(iss);
     const sign = bs >= 0 ? "+" : "";
+    const title = (iss.title || "").replace(/^#\d+\s*/, "");
     return `<div class="issue-card" data-num="${iss.num}">
-      <div class="issue-header">
-        <span class="issue-num">#${iss.num}</span>
-        <span class="issue-title">${(iss.title || "").replace(/^#\d+\s*/, "")}</span>
-        <span class="issue-meta">${iss.rows.length} opts · best ${sign}${bs.toFixed(1)}</span>
+      <div class="flex justify-between items-start">
+        <div class="flex-1 min-w-0 pr-4">
+          <span class="issue-badge">Legislative Queue</span>
+          <h3 class="issue-title-text">${title}</h3>
+          <p class="text-xs text-on-surface-variant mt-1">${iss.rows.length} options</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p class="text-[0.6rem] uppercase tracking-widest text-outline font-bold">Best Score</p>
+          <p class="font-headline text-2xl font-black text-primary">${sign}${bs.toFixed(1)}</p>
+        </div>
       </div>
       <div class="issue-body" id="body-${iss.num}"></div>
     </div>`;
@@ -154,12 +154,11 @@ function renderIssueList() {
 }
 
 function toggleIssue(card) {
-  const num    = parseInt(card.dataset.num, 10);
-  const body   = document.getElementById("body-" + num);
-  const expand = card.classList.toggle("expanded");
-  body.classList.toggle("open", expand);
-
-  if (expand && !body.dataset.rendered) {
+  const num  = parseInt(card.dataset.num, 10);
+  const body = document.getElementById("body-" + num);
+  const open = card.classList.toggle("expanded");
+  body.classList.toggle("open", open);
+  if (open && !body.dataset.rendered) {
     body.dataset.rendered = "1";
     body.innerHTML = renderIssueOptions(num);
   }
@@ -168,39 +167,75 @@ function toggleIssue(card) {
 function renderIssueOptions(num) {
   const iss = allIssues.find(i => i.num === num);
   if (!iss) return "";
-
   const scored = scoreIssue(iss);
 
-  return scored.map((opt, idx) => {
+  // Build option grid (2-up)
+  const cards = scored.map((opt, idx) => {
     const isWinner = idx === 0;
     const sign     = opt.score >= 0 ? "+" : "";
+    const scoreCol = isWinner ? "text-primary" : "text-outline";
+    const labelCol = isWinner ? "text-primary" : "text-outline";
 
-    // Top stat movers relevant to configured priorities
+    // Top stat movers
     const movers = statCols
       .filter(col => {
-        const name = col.replace(/^Industry:\s*/i,"").replace(/^Sector:\s*/i,"");
-        return priorities[name] !== undefined || priorities[col] !== undefined;
+        const n = col.replace(/^Industry:\s*/i,"").replace(/^Sector:\s*/i,"");
+        return priorities[n] !== undefined || priorities[col] !== undefined;
       })
-      .map(col => ({ col, delta: opt.row[col] || 0 }))
-      .filter(x => Math.abs(x.delta) > 0.5)
+      .map(col => ({
+        name:  col.replace(/^Industry:\s*/i,"").replace(/^Sector:\s*/i,""),
+        delta: opt.row[col] || 0,
+      }))
+      .filter(x => Math.abs(x.delta) > 0.3)
       .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-      .slice(0, 6);
+      .slice(0, 5);
 
-    const moverHtml = movers.map(m => {
-      const name = m.col.replace(/^Industry:\s*/i,"").replace(/^Sector:\s*/i,"");
-      return `<span class="mover-tag ${m.delta > 0 ? "up" : "down"}">
-        ${m.delta > 0 ? "+" : ""}${m.delta.toFixed(2)} ${name}
-      </span>`;
+    const tableRows = movers.map(m => {
+      const pScore  = priorities[m.name] || 0;
+      const contrib = (m.delta * (pScore >= 0 ? 1 : -1)).toFixed(2);
+      const cc      = parseFloat(contrib) >= 0 ? "contrib-pos" : "contrib-neg";
+      return `<tr>
+        <td>${m.name}</td>
+        <td class="text-right text-on-surface-variant">${m.delta > 0 ? "+" : ""}${m.delta.toFixed(2)}</td>
+        <td class="text-right text-on-surface-variant">${Math.abs(pScore)}</td>
+        <td class="${cc}">${contrib}</td>
+      </tr>`;
     }).join("");
 
-    return `<div class="opt-row${isWinner ? " winner" : ""}">
-      <span class="opt-num">${opt.num}</span>
-      <div>
-        <div class="opt-text">${opt.text.substring(0, 200)}</div>
-        ${isWinner ? '<span class="winner-badge">✓ Bot Pick</span>' : ""}
-        <div class="stat-movers">${moverHtml}</div>
+    const breakdown = movers.length ? `
+      <div class="breakdown-table mt-4">
+        <table>
+          <thead><tr>
+            <th>Stat</th><th class="text-right">Delta</th>
+            <th class="text-right">Weight</th><th class="text-right">Contrib</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>` : "";
+
+    const winnerCorner = isWinner ? `
+      <div class="winner-corner"></div>
+      <span class="material-symbols-outlined winner-star" style="font-variation-settings:'FILL' 1">star</span>` : "";
+
+    return `<div class="opt-card ${isWinner ? "winner" : "loser"}">
+      ${winnerCorner}
+      <div class="flex justify-between items-center mb-1">
+        <p class="opt-label ${labelCol}">Option ${opt.num}</p>
+        <p class="opt-score-big ${scoreCol}">${sign}${opt.score.toFixed(1)}</p>
       </div>
-      <span class="opt-score ${opt.score >= 0 ? "pos" : "neg"}">${sign}${opt.score.toFixed(1)}</span>
+      <p class="opt-text-body">${opt.text.substring(0, 180)}</p>
+      ${breakdown}
     </div>`;
-  }).join("");
+  });
+
+  // 2-column grid for first two, rest stacked
+  const pairs = [];
+  for (let i = 0; i < cards.length; i += 2) {
+    if (i + 1 < cards.length) {
+      pairs.push(`<div class="grid grid-cols-2 gap-4">${cards[i]}${cards[i+1]}</div>`);
+    } else {
+      pairs.push(cards[i]);
+    }
+  }
+  return pairs.join("");
 }

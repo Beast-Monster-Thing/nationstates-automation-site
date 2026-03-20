@@ -1,39 +1,44 @@
 /**
- * main.js
- * Auto-loads ns_results.csv from the repo on page load.
- * Manual upload zone remains as a fallback.
+ * main.js — Sovereign Ledger
+ * Auto-loads ns_results.csv from repo. Manual upload as fallback.
  */
 
 const CSV_URL = "ns_results.csv";
+const PAGE_TITLES = {
+  overview:   "Overview",
+  priorities: "Priority Editor",
+  scorer:     "Issue Scorer",
+  setup:      "Setup",
+};
 
-// ── Loading overlay ──────────────────────────────────────────────────────────
+// ── Loading overlay ───────────────────────────────────────────────────────────
 
 function showLoading(msg) {
   document.getElementById("loading-msg").textContent = msg;
   document.getElementById("loading-overlay").classList.add("show");
 }
-
 function hideLoading() {
   document.getElementById("loading-overlay").classList.remove("show");
 }
 
-// ── Tabs ─────────────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────────
 
-document.querySelectorAll(".tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-    tab.classList.add("active");
-    document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("nav-active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("panel-active"));
+    item.classList.add("nav-active");
+    document.getElementById("tab-" + item.dataset.tab).classList.add("panel-active");
+    document.getElementById("page-title").textContent = PAGE_TITLES[item.dataset.tab] || "";
 
-    if (tab.dataset.tab === "scorer" && !csvData) {
-      document.getElementById("scorer-upload-notice").style.display = "";
+    if (item.dataset.tab === "scorer" && !csvData) {
+      document.getElementById("scorer-upload-notice").classList.remove("hidden");
       document.getElementById("scorer-content").style.display = "none";
     }
   });
 });
 
-// ── Auto-fetch CSV from repo ──────────────────────────────────────────────────
+// ── Auto-fetch CSV ────────────────────────────────────────────────────────────
 
 function fetchCSV() {
   showLoading("Loading ns_results.csv…");
@@ -47,7 +52,9 @@ function fetchCSV() {
       onDataLoaded();
       hideLoading();
       document.getElementById("drop-zone").style.display = "none";
-      document.getElementById("csv-loaded-notice").style.display = "";
+      const notice = document.getElementById("csv-loaded-notice");
+      notice.classList.remove("hidden");
+      notice.classList.add("flex");
     },
     error(err) {
       hideLoading();
@@ -56,7 +63,7 @@ function fetchCSV() {
   });
 }
 
-// ── Manual upload (fallback) ──────────────────────────────────────────────────
+// ── Manual upload fallback ────────────────────────────────────────────────────
 
 const dropZone  = document.getElementById("drop-zone");
 const fileInput = document.getElementById("file-input");
@@ -78,31 +85,37 @@ function loadCSVFile(file) {
   showLoading(`Parsing ${file.name}…`);
   setTimeout(() => {
     Papa.parse(file, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
+      header: true, dynamicTyping: true, skipEmptyLines: true,
       complete(results) { processCSV(results); onDataLoaded(); hideLoading(); },
       error(err) { hideLoading(); alert("CSV parse error: " + err.message); },
     });
   }, 50);
 }
 
-// ── Post-load UI update ───────────────────────────────────────────────────────
+// ── Post-load UI ──────────────────────────────────────────────────────────────
 
 function onDataLoaded() {
-  document.getElementById("header-info").textContent =
-    `${allIssues.length} issues · ${csvData.length} options · ${statCols.length} stats`;
+  const summary = `${allIssues.length} issues · ${csvData.length} options · ${statCols.length} stats`;
+
+  document.getElementById("sidebar-status").textContent = `${allIssues.length} issues loaded`;
+
+  const badge = document.getElementById("data-badge");
+  badge.classList.remove("hidden");
+  badge.classList.add("flex");
+  document.getElementById("data-badge-text").textContent = summary;
 
   document.getElementById("sb-issues").textContent  = allIssues.length;
   document.getElementById("sb-options").textContent = csvData.length;
   document.getElementById("sb-stats").textContent   = statCols.length;
-  document.getElementById("stat-boxes").style.display = "";
+  const sb = document.getElementById("stat-boxes");
+  sb.classList.remove("hidden");
+  sb.classList.add("grid");
 
   updatePriorityCoverage();
   renderTopPicks();
   renderPriorityList();
 
-  document.getElementById("scorer-upload-notice").style.display = "none";
+  document.getElementById("scorer-upload-notice").classList.add("hidden");
   document.getElementById("scorer-content").style.display = "";
   renderIssueList();
 }
@@ -111,8 +124,8 @@ function onDataLoaded() {
 
 document.querySelectorAll("[data-filter]").forEach(chip => {
   chip.addEventListener("click", () => {
-    document.querySelectorAll("[data-filter]").forEach(c => c.classList.remove("active-chip"));
-    chip.classList.add("active-chip");
+    document.querySelectorAll("[data-filter]").forEach(c => c.classList.remove("chip-active"));
+    chip.classList.add("chip-active");
     prioFilter = chip.dataset.filter;
     renderPriorityList();
   });
@@ -120,8 +133,8 @@ document.querySelectorAll("[data-filter]").forEach(chip => {
 
 document.querySelectorAll("[data-sort]").forEach(chip => {
   chip.addEventListener("click", () => {
-    document.querySelectorAll("[data-sort]").forEach(c => c.classList.remove("active-chip"));
-    chip.classList.add("active-chip");
+    document.querySelectorAll("[data-sort]").forEach(c => c.classList.remove("chip-active"));
+    chip.classList.add("chip-active");
     sortMode = chip.dataset.sort;
     renderIssueList();
   });
@@ -131,8 +144,8 @@ document.querySelectorAll("[data-sort]").forEach(chip => {
 
 document.getElementById("prio-search").addEventListener("input", renderPriorityList);
 document.getElementById("issue-search").addEventListener("input", () => {
-  clearTimeout(window._issueSearchTimer);
-  window._issueSearchTimer = setTimeout(renderIssueList, 200);
+  clearTimeout(window._issueTimer);
+  window._issueTimer = setTimeout(renderIssueList, 200);
 });
 
 // ── Buttons ───────────────────────────────────────────────────────────────────

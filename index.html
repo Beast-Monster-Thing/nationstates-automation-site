@@ -3,199 +3,313 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NS Issue Bot — Command Console</title>
+  <title>Sovereign Ledger | NS Issue Bot</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "primary":                   "#002046",
+            "primary-container":         "#1b365d",
+            "on-primary":                "#ffffff",
+            "on-primary-container":      "#87a0cd",
+            "secondary":                 "#505f76",
+            "secondary-container":       "#d0e1fb",
+            "on-secondary-container":    "#54647a",
+            "tertiary-fixed":            "#ffdea5",
+            "tertiary-fixed-dim":        "#e9c176",
+            "on-tertiary-fixed":         "#261900",
+            "tertiary-container":        "#483200",
+            "on-tertiary-container":     "#be9953",
+            "surface":                   "#f9f9ff",
+            "surface-dim":               "#cfdaf2",
+            "surface-container-lowest":  "#ffffff",
+            "surface-container-low":     "#f0f3ff",
+            "surface-container":         "#e7eeff",
+            "surface-container-high":    "#dee8ff",
+            "surface-container-highest": "#d8e3fb",
+            "on-surface":                "#111c2d",
+            "on-surface-variant":        "#44474e",
+            "outline":                   "#74777f",
+            "outline-variant":           "#c4c6cf",
+            "error":                     "#ba1a1a",
+            "error-container":           "#ffdad6",
+            "on-error-container":        "#93000a",
+          },
+          fontFamily: {
+            headline: ["Manrope", "sans-serif"],
+            body:     ["Inter",   "sans-serif"],
+          },
+          borderRadius: {
+            DEFAULT: "0.375rem",
+            lg:      "0.5rem",
+            xl:      "0.75rem",
+            "2xl":   "1rem",
+            full:    "9999px",
+          },
+          boxShadow: {
+            ambient: "0px 12px 32px rgba(17,28,45,0.08)",
+            sm:      "0px 2px 8px rgba(17,28,45,0.06)",
+          },
+        },
+      },
+    };
+  </script>
 </head>
-<body>
+<body class="bg-surface font-body text-on-surface min-h-screen flex overflow-hidden">
 
-<div id="loading-overlay">
-  <div class="loading-box">
-    <div class="spinner"></div>
-    <p id="loading-msg">Parsing data…</p>
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-surface/90 backdrop-blur-sm z-[200] place-items-center">
+  <div class="bg-surface-container-lowest rounded-2xl p-10 text-center shadow-ambient">
+    <div class="spinner mx-auto"></div>
+    <p id="loading-msg" class="text-sm text-on-surface-variant font-body mt-4">Loading…</p>
   </div>
 </div>
 
-<header>
-  <div class="header-flag">⚑</div>
-  <h1>NS Issue Bot <span>Command Console</span></h1>
-  <div class="header-status">
-    <div class="status-dot"></div>
-    <span id="header-info">No data loaded</span>
+<!-- Sidebar -->
+<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest flex flex-col z-50 shadow-ambient">
+  <div class="px-6 pt-8 pb-4">
+    <p class="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-outline mb-1.5">Nation Management</p>
+    <h1 class="font-headline text-xl font-extrabold text-primary uppercase tracking-tight leading-tight">Sovereign<br>Ledger</h1>
+    <p id="sidebar-status" class="text-[0.6rem] uppercase tracking-[0.05em] text-outline mt-2.5">No data loaded</p>
   </div>
-</header>
 
-<nav>
-  <div class="tab active" data-tab="overview">Overview</div>
-  <div class="tab" data-tab="priorities">Priorities</div>
-  <div class="tab" data-tab="scorer">Issue Scorer</div>
-  <div class="tab" data-tab="setup">Setup</div>
-</nav>
-
-<main>
-
-  <!-- ══ OVERVIEW ══ -->
-  <div class="panel active" id="tab-overview">
-    <div class="card">
-      <div class="card-title">Data Source</div>
-      <div id="csv-loaded-notice" style="display:none" class="loaded-notice">
-        ✓ <strong>ns_results.csv</strong> loaded from repository
-      </div>
-      <div class="upload-zone" id="drop-zone">
-        <div class="upload-icon">📂</div>
-        <p>Drop <strong>ns_results.csv</strong> here, or click to select</p>
-        <p class="upload-sub">The file stays in your browser — nothing is uploaded to any server.</p>
-      </div>
-      <input type="file" id="file-input" accept=".csv">
+  <nav class="flex-1 px-3 mt-2 space-y-0.5">
+    <div class="nav-item nav-active" data-tab="overview">
+      <span class="material-symbols-outlined nav-icon">dashboard</span>
+      <span>Overview</span>
     </div>
-
-    <div class="grid-3" id="stat-boxes" style="display:none">
-      <div class="stat-box">
-        <span class="val" id="sb-issues">—</span>
-        <span class="lbl">Unique Issues</span>
-      </div>
-      <div class="stat-box">
-        <span class="val" id="sb-options">—</span>
-        <span class="lbl">Total Options</span>
-      </div>
-      <div class="stat-box">
-        <span class="val" id="sb-stats">—</span>
-        <span class="lbl">Census Stats Tracked</span>
-      </div>
+    <div class="nav-item" data-tab="priorities">
+      <span class="material-symbols-outlined nav-icon">tune</span>
+      <span>Priorities</span>
     </div>
-
-    <div class="card" id="top-picks-card" style="display:none">
-      <div class="card-title">Top Picks Preview — Current Priorities</div>
-      <div id="top-picks-body"></div>
+    <div class="nav-item" data-tab="scorer">
+      <span class="material-symbols-outlined nav-icon">gavel</span>
+      <span>Issue Scorer</span>
     </div>
+    <div class="nav-item" data-tab="setup">
+      <span class="material-symbols-outlined nav-icon">terminal</span>
+      <span>Setup</span>
+    </div>
+  </nav>
 
-    <div class="card">
-      <div class="card-title">Priority Distribution</div>
-      <div class="grid-2">
-        <div>
-          <div class="section-label pos">▲ Maximize (&gt;0)</div>
-          <div id="pos-preview"></div>
-        </div>
-        <div>
-          <div class="section-label neg">▼ Minimize (&lt;0)</div>
-          <div id="neg-preview"></div>
-        </div>
+  <div class="px-3 pb-6 pt-4 border-t border-outline-variant/20">
+    <div class="flex items-center p-3 rounded-xl bg-surface-container-high/60">
+      <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary text-xs font-bold flex-shrink-0">NS</div>
+      <div class="ml-3 min-w-0">
+        <p class="text-xs font-bold text-on-surface">Issue Bot</p>
+        <p class="text-[0.6rem] uppercase tracking-tighter text-on-surface-variant">Automated Scoring</p>
       </div>
     </div>
   </div>
+</aside>
 
-  <!-- ══ PRIORITIES ══ -->
-  <div class="panel" id="tab-priorities">
-    <div class="card">
-      <div class="card-title">Priority Config Editor</div>
-      <div class="chip-row">
-        <div class="chip active-chip" data-filter="all">All</div>
-        <div class="chip" data-filter="pos">Maximize</div>
-        <div class="chip" data-filter="neg">Minimize</div>
-      </div>
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="prio-search" placeholder="Filter stats…">
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-amber" id="export-cfg-btn">⬇ Export priority.cfg</button>
-        <button class="btn btn-ghost" id="reset-prio-btn">↺ Reset to Default</button>
-      </div>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="prio-coverage" style="width:0%"></div>
-      </div>
-      <p id="prio-coverage-label" class="coverage-label">Coverage: — of — census stats configured</p>
-      <div id="priority-list"></div>
-    </div>
-  </div>
+<!-- Main -->
+<main class="ml-64 flex-1 flex flex-col h-screen overflow-hidden">
 
-  <!-- ══ SCORER ══ -->
-  <div class="panel" id="tab-scorer">
-    <div class="card" id="scorer-upload-notice" style="display:none">
-      <div class="card-title">Load Data First</div>
-      <p class="muted">Go to the <strong class="amber">Overview</strong> tab and load <code>ns_results.csv</code> to use the scorer.</p>
-    </div>
-    <div id="scorer-content">
-      <div class="card">
-        <div class="card-title">Issue Lookup</div>
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="issue-search" placeholder="Search by issue number or title…">
-        </div>
-        <div class="chip-row" id="sort-chips">
-          <div class="chip active-chip" data-sort="num">By Number</div>
-          <div class="chip" data-sort="best">Best Score First</div>
-          <div class="chip" data-sort="worst">Worst Score First</div>
-        </div>
-        <div id="issue-results">
-          <div class="empty">Load ns_results.csv to see issues</div>
-        </div>
+  <!-- Glassmorphism Header -->
+  <header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/80 backdrop-blur-md shadow-sm">
+    <div class="flex justify-between items-center h-16 px-8">
+      <h2 id="page-title" class="font-headline text-lg font-extrabold text-primary uppercase tracking-tight">Overview</h2>
+      <div id="data-badge" class="hidden items-center gap-2 bg-surface-container-low px-4 py-1.5 rounded-full">
+        <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+        <span id="data-badge-text" class="text-[0.6875rem] font-bold uppercase tracking-wide text-on-surface-variant"></span>
       </div>
     </div>
-  </div>
+  </header>
 
-  <!-- ══ SETUP ══ -->
-  <div class="panel" id="tab-setup">
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-title">.env Configuration</div>
-        <pre class="code-block"><span class="comment"># Required</span>
-<span class="key">NATION</span>=your_nation_name
-<span class="key">PASSWORD</span>=your_ns_password
-<span class="key">USER_AGENT</span>=YourBot/1.0 (contact@you.com)
+  <!-- Scrollable content -->
+  <div class="mt-16 flex-1 overflow-y-auto bg-surface-container-low">
 
-<span class="comment"># Optional</span>
-<span class="key">SLEEP_BETWEEN_REQUESTS</span>=10
-<span class="key">TEST_MODE</span>=false</pre>
+    <!-- OVERVIEW -->
+    <div class="panel panel-active" id="tab-overview">
+      <div class="p-8 max-w-6xl mx-auto">
+
+        <!-- Upload -->
+        <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm mb-8">
+          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">Data Source</p>
+          <div id="csv-loaded-notice" class="hidden items-center gap-3 bg-green-50 rounded-xl px-5 py-4">
+            <span class="material-symbols-outlined text-green-600">check_circle</span>
+            <p class="text-sm font-semibold text-green-800">ns_results.csv loaded from repository</p>
+          </div>
+          <div id="drop-zone" class="upload-zone rounded-xl cursor-pointer text-center py-10 px-6">
+            <span class="material-symbols-outlined text-4xl text-outline/40 mb-3 block" style="font-size:2.5rem">upload_file</span>
+            <p class="font-headline font-bold text-on-surface">Drop <span class="text-primary">ns_results.csv</span> here</p>
+            <p class="text-sm text-on-surface-variant mt-1">or click to browse — file stays in your browser</p>
+          </div>
+          <input type="file" id="file-input" accept=".csv" class="hidden">
+        </div>
+
+        <!-- Stat boxes -->
+        <div id="stat-boxes" class="hidden grid-cols-3 gap-6 mb-8">
+          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm text-center">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline mb-2">Unique Issues</p>
+            <p id="sb-issues" class="font-headline text-4xl font-black text-primary">—</p>
+          </div>
+          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm text-center">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline mb-2">Total Options</p>
+            <p id="sb-options" class="font-headline text-4xl font-black text-primary">—</p>
+          </div>
+          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm text-center">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline mb-2">Census Stats</p>
+            <p id="sb-stats" class="font-headline text-4xl font-black text-primary">—</p>
+          </div>
+        </div>
+
+        <!-- 60/40 split -->
+        <div class="grid grid-cols-5 gap-6">
+          <div id="top-picks-card" class="col-span-3 bg-surface-container-lowest rounded-2xl p-6 shadow-sm hidden">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-5">Top Picks — Current Priorities</p>
+            <div id="top-picks-body"></div>
+          </div>
+          <div class="col-span-2 bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-5">Priority Distribution</p>
+            <p class="text-[0.6875rem] font-bold uppercase tracking-widest text-green-600 mb-3">▲ Maximize</p>
+            <div id="pos-preview" class="space-y-1.5 mb-5"></div>
+            <p class="text-[0.6875rem] font-bold uppercase tracking-widest text-error mb-3">▼ Minimize</p>
+            <div id="neg-preview" class="space-y-1.5"></div>
+          </div>
+        </div>
+
       </div>
+    </div>
 
-      <div class="card">
-        <div class="card-title">requirements.txt</div>
-        <pre class="code-block">requests
-beautifulsoup4
-lxml
-pandas
-numpy
-python-dotenv</pre>
-        <hr class="sep">
-        <div class="card-title">Install &amp; Run</div>
-        <pre class="code-block"><span class="comment"># Install deps</span>
+    <!-- PRIORITIES -->
+    <div class="panel" id="tab-priorities">
+      <div class="p-8 max-w-4xl mx-auto">
+        <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
+          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-6">Priority Config Editor</p>
+
+          <div class="flex gap-2 mb-5">
+            <button class="chip chip-active" data-filter="all">All</button>
+            <button class="chip" data-filter="pos">Maximize</button>
+            <button class="chip" data-filter="neg">Minimize</button>
+          </div>
+
+          <div class="relative mb-5">
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none" style="font-size:1.1rem">search</span>
+            <input id="prio-search" type="text" placeholder="Filter stats…"
+              class="w-full bg-surface-container-low rounded-full pl-11 pr-5 py-3 text-sm text-on-surface placeholder:text-outline/50 outline-none focus:bg-surface-container-lowest transition-all prio-input">
+          </div>
+
+          <div class="flex gap-3 mb-6">
+            <button id="export-cfg-btn" class="btn-primary">
+              <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">download</span>
+              Export priority.cfg
+            </button>
+            <button id="reset-prio-btn" class="btn-secondary">
+              <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">restart_alt</span>
+              Reset to Default
+            </button>
+          </div>
+
+          <div class="bg-surface-container-low rounded-full h-1.5 mb-2 overflow-hidden">
+            <div id="prio-coverage" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(135deg,#002046,#1b365d)"></div>
+          </div>
+          <p id="prio-coverage-label" class="text-[0.6rem] uppercase tracking-[0.1em] text-outline mb-6">Coverage: —</p>
+
+          <div id="priority-list" class="space-y-1.5 max-h-[560px] overflow-y-auto pr-1 custom-scroll"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORER -->
+    <div class="panel" id="tab-scorer">
+      <div class="p-8 max-w-5xl mx-auto">
+
+        <div id="scorer-upload-notice" class="hidden bg-surface-container-lowest rounded-2xl p-8 shadow-sm mb-6">
+          <p class="text-sm text-on-surface-variant">Go to <strong class="text-primary">Overview</strong> and load <code class="text-primary bg-surface-container-low px-1.5 py-0.5 rounded text-xs">ns_results.csv</code> first.</p>
+        </div>
+
+        <div id="scorer-content">
+          <div class="relative mb-6">
+            <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-primary pointer-events-none">search</span>
+            <input id="issue-search" type="text" placeholder="Search issue number or title…"
+              class="w-full h-14 bg-surface-container-lowest rounded-full pl-14 pr-6 font-headline font-bold text-primary text-base placeholder:text-outline/40 outline-none shadow-sm focus:shadow-md transition-all">
+          </div>
+
+          <div class="flex gap-2 mb-6">
+            <button class="chip chip-active" data-sort="num">By Number</button>
+            <button class="chip" data-sort="best">Best Score First</button>
+            <button class="chip" data-sort="worst">Worst Score First</button>
+          </div>
+
+          <div id="issue-results" class="space-y-6">
+            <p class="text-center text-on-surface-variant text-sm py-10">Load ns_results.csv to see issues</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETUP -->
+    <div class="panel" id="tab-setup">
+      <div class="p-8 max-w-5xl mx-auto space-y-6">
+
+        <div class="grid grid-cols-2 gap-6">
+          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">.env Configuration</p>
+            <pre class="code-block"><span class="text-outline"># Required</span>
+<span class="text-primary font-semibold">NATION</span>=your_nation_name
+<span class="text-primary font-semibold">PASSWORD</span>=your_ns_password
+<span class="text-primary font-semibold">USER_AGENT</span>=YourBot/1.0 (you@email.com)
+
+<span class="text-outline"># Optional</span>
+<span class="text-primary font-semibold">SLEEP_BETWEEN_REQUESTS</span>=10
+<span class="text-primary font-semibold">TEST_MODE</span>=false</pre>
+          </div>
+          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">Install &amp; Run</p>
+            <pre class="code-block"><span class="text-outline"># Install dependencies</span>
 pip install -r requirements.txt
 
-<span class="comment"># Run once</span>
+<span class="text-outline"># Run once</span>
 python main.py
 
-<span class="comment"># Cron — daily at 8am</span>
-0 8 * * * cd /path/to/bot && python main.py</pre>
-      </div>
-    </div>
+<span class="text-outline"># Cron — daily at 8 AM</span>
+0 8 * * * cd /path/to/bot \
+  &amp;&amp; python main.py</pre>
+          </div>
+        </div>
 
-    <div class="card">
-      <div class="card-title">How Scoring Works</div>
-      <div class="explainer">
-        <p>The bot scores each issue option by looking up its census stat deltas in <code>ns_results.csv</code>, then combining them using the weights from <code>priority.cfg</code>.</p>
-        <pre class="code-block formula"><span class="comment">for each configured stat:</span>
-  norm   = delta / std_dev(stat)
-  dir    = norm × sign(priority_score)
+        <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
+          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-6">Scoring Algorithm</p>
+          <div class="grid grid-cols-2 gap-8">
+            <div class="text-sm text-on-surface-variant leading-relaxed space-y-3">
+              <p>Each option is scored by looking up census stat deltas in <code class="text-primary bg-surface-container-low px-1.5 py-0.5 rounded text-xs">ns_results.csv</code>, combined using weights from <code class="text-primary bg-surface-container-low px-1.5 py-0.5 rounded text-xs">priority.cfg</code>.</p>
+              <p>Higher absolute priority = more weight. Positive = want higher. Negative = want lower. Deltas are normalized by standard deviation.</p>
+            </div>
+            <div class="bg-surface-container-low rounded-xl p-5">
+              <p class="text-[0.6rem] uppercase tracking-widest text-outline font-bold mb-3">Formula</p>
+              <pre class="text-xs text-primary leading-relaxed">for each configured stat:
+  norm   = delta / std_dev
+  dir    = norm × sign(priority)
   weight = rank_by_abs_priority
   score += weight × dir
 
-→ pick option with highest total score</pre>
-        <p>Stats with higher absolute priority values get more weight. Positive priority = want the stat to go up. Negative = want it to go down. Deltas are normalized by their standard deviation across all options.</p>
+→ pick highest total score</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
+          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">File Structure</p>
+          <pre class="code-block">project/
+├── <span class="text-primary font-semibold">main.py</span>           — bot logic
+├── <span class="text-primary font-semibold">priority.cfg</span>      — stat priorities
+├── <span class="text-primary font-semibold">ns_results.csv</span>    — precomputed deltas
+├── <span class="text-primary font-semibold">.env</span>              — credentials (never commit!)
+├── <span class="text-primary font-semibold">requirements.txt</span>
+└── <span class="text-primary font-semibold">choices.ndjson</span>    — auto decision log</pre>
+        </div>
+
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">File Structure</div>
-      <pre class="code-block">project/
-├── <span class="key">main.py</span>           — bot logic
-├── <span class="key">priority.cfg</span>      — your stat priorities
-├── <span class="key">ns_results.csv</span>    — precomputed stat deltas
-├── <span class="key">.env</span>              — credentials (never commit!)
-├── <span class="key">requirements.txt</span>
-└── <span class="key">choices.ndjson</span>    — auto-created decision log</pre>
-    </div>
   </div>
-
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
