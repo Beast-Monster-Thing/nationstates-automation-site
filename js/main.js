@@ -1,6 +1,5 @@
 /**
  * main.js — Sovereign Ledger
- * Entry point: tabs, CSV auto-fetch, cfg import, search, buttons.
  */
 
 const CSV_URL = "ns_results.csv";
@@ -43,21 +42,17 @@ function fetchCSV() {
     error(err) {
       hideLoading();
       console.warn("Auto-fetch failed:", err);
-      const n = el("scorer-upload-notice");
-      if (n) n.classList.remove("hidden");
     },
   });
 }
 
 // ── Post-load UI ──────────────────────────────────────────────────────────────
 
-function set(id, val) { const e = el(id); if (e) e.textContent = val; }
-
 function onDataLoaded() {
   const badge = el("data-badge");
   if (badge) { badge.classList.remove("hidden"); badge.classList.add("flex"); }
-  set("data-badge-text", `${allIssues.length} issues · ${statCols.length} stats`);
-
+  const txt = el("data-badge-text");
+  if (txt) txt.textContent = `${allIssues.length} issues · ${statCols.length} stats`;
   renderPriorityList();
   renderIssueList();
 }
@@ -73,8 +68,8 @@ function parseCfgText(text) {
     let name, scoreStr;
     if (line.includes("—")) {
       const parts = line.split("—");
-      name      = parts[0].trim();
-      scoreStr  = parts[1]?.trim();
+      name     = parts[0].trim();
+      scoreStr = parts[1]?.trim();
     } else {
       const parts = line.split(" ");
       scoreStr = parts[parts.length - 1];
@@ -89,7 +84,6 @@ function parseCfgText(text) {
 function applyCfg(text) {
   const { result, parsed } = parseCfgText(text);
   if (parsed === 0) return "No valid entries found. Format: StatName — score";
-  // Merge: keep existing stats from CSV at 0 if not in cfg
   Object.keys(priorities).forEach(k => { priorities[k] = 0; });
   Object.entries(result).forEach(([name, score]) => {
     if (name in priorities) priorities[name] = score;
@@ -107,10 +101,7 @@ cfgFileInput.addEventListener("change", () => {
   const file = cfgFileInput.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    const err = applyCfg(e.target.result);
-    if (err) alert(err);
-  };
+  reader.onload = e => { const err = applyCfg(e.target.result); if (err) alert(err); };
   reader.readAsText(file);
   cfgFileInput.value = "";
 });
@@ -122,12 +113,10 @@ el("paste-cfg-btn").addEventListener("click", () => {
   el("paste-textarea").focus();
   el("paste-error").classList.add("hidden");
 });
-
 el("paste-cancel-btn").addEventListener("click", () => {
   el("paste-modal").classList.add("hidden");
   el("paste-textarea").value = "";
 });
-
 el("paste-apply-btn").addEventListener("click", () => {
   const text = el("paste-textarea").value.trim();
   if (!text) return;
@@ -141,7 +130,7 @@ el("paste-apply-btn").addEventListener("click", () => {
   }
 });
 
-// ── Filter chips ──────────────────────────────────────────────────────────────
+// ── Chips ─────────────────────────────────────────────────────────────────────
 
 document.querySelectorAll("[data-filter]").forEach(chip => {
   chip.addEventListener("click", () => {
