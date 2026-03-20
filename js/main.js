@@ -11,14 +11,16 @@ const PAGE_TITLES = {
   setup:      "Setup",
 };
 
-// ── Loading overlay ───────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function el(id) { return document.getElementById(id); }
 
 function showLoading(msg) {
-  document.getElementById("loading-msg").textContent = msg;
-  document.getElementById("loading-overlay").classList.add("show");
+  el("loading-msg").textContent = msg;
+  el("loading-overlay").classList.add("show");
 }
 function hideLoading() {
-  document.getElementById("loading-overlay").classList.remove("show");
+  el("loading-overlay").classList.remove("show");
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -28,12 +30,12 @@ document.querySelectorAll(".nav-item").forEach(item => {
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("nav-active"));
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("panel-active"));
     item.classList.add("nav-active");
-    document.getElementById("tab-" + item.dataset.tab).classList.add("panel-active");
-    document.getElementById("page-title").textContent = PAGE_TITLES[item.dataset.tab] || "";
+    el("tab-" + item.dataset.tab).classList.add("panel-active");
+    el("page-title").textContent = PAGE_TITLES[item.dataset.tab] || "";
 
     if (item.dataset.tab === "scorer" && !csvData) {
-      document.getElementById("scorer-upload-notice").classList.remove("hidden");
-      document.getElementById("scorer-content").style.display = "none";
+      el("scorer-upload-notice").classList.remove("hidden");
+      el("scorer-content").style.display = "none";
     }
   });
 });
@@ -51,10 +53,11 @@ function fetchCSV() {
       processCSV(results);
       onDataLoaded();
       hideLoading();
-      document.getElementById("drop-zone").style.display = "none";
-      const notice = document.getElementById("csv-loaded-notice");
-      notice.classList.remove("hidden");
-      notice.classList.add("flex");
+
+      const dz     = el("drop-zone");
+      const notice = el("csv-loaded-notice");
+      if (dz)     dz.style.display = "none";
+      if (notice) { notice.classList.remove("hidden"); notice.classList.add("flex"); }
     },
     error(err) {
       hideLoading();
@@ -65,21 +68,23 @@ function fetchCSV() {
 
 // ── Manual upload fallback ────────────────────────────────────────────────────
 
-const dropZone  = document.getElementById("drop-zone");
-const fileInput = document.getElementById("file-input");
+const dropZone  = el("drop-zone");
+const fileInput = el("file-input");
 
-dropZone.addEventListener("click", () => fileInput.click());
-dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag"); });
-dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
-dropZone.addEventListener("drop", e => {
-  e.preventDefault();
-  dropZone.classList.remove("drag");
-  const f = e.dataTransfer.files[0];
-  if (f) loadCSVFile(f);
-});
-fileInput.addEventListener("change", () => {
-  if (fileInput.files[0]) loadCSVFile(fileInput.files[0]);
-});
+if (dropZone && fileInput) {
+  dropZone.addEventListener("click",     () => fileInput.click());
+  dropZone.addEventListener("dragover",  e  => { e.preventDefault(); dropZone.classList.add("drag"); });
+  dropZone.addEventListener("dragleave", ()  => dropZone.classList.remove("drag"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("drag");
+    const f = e.dataTransfer.files[0];
+    if (f) loadCSVFile(f);
+  });
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) loadCSVFile(fileInput.files[0]);
+  });
+}
 
 function loadCSVFile(file) {
   showLoading(`Parsing ${file.name}…`);
@@ -87,36 +92,39 @@ function loadCSVFile(file) {
     Papa.parse(file, {
       header: true, dynamicTyping: true, skipEmptyLines: true,
       complete(results) { processCSV(results); onDataLoaded(); hideLoading(); },
-      error(err) { hideLoading(); alert("CSV parse error: " + err.message); },
+      error(err)        { hideLoading(); alert("CSV parse error: " + err.message); },
     });
   }, 50);
 }
 
 // ── Post-load UI ──────────────────────────────────────────────────────────────
 
+function set(id, val) { const e = el(id); if (e) e.textContent = val; }
+
 function onDataLoaded() {
   const summary = `${allIssues.length} issues · ${csvData.length} options · ${statCols.length} stats`;
 
-  document.getElementById("sidebar-status").textContent = `${allIssues.length} issues loaded`;
+  set("sidebar-status", `${allIssues.length} issues loaded`);
 
-  const badge = document.getElementById("data-badge");
-  badge.classList.remove("hidden");
-  badge.classList.add("flex");
-  document.getElementById("data-badge-text").textContent = summary;
+  const badge = el("data-badge");
+  if (badge) { badge.classList.remove("hidden"); badge.classList.add("flex"); }
+  set("data-badge-text", summary);
 
-  document.getElementById("sb-issues").textContent  = allIssues.length;
-  document.getElementById("sb-options").textContent = csvData.length;
-  document.getElementById("sb-stats").textContent   = statCols.length;
-  const sb = document.getElementById("stat-boxes");
-  sb.classList.remove("hidden");
-  sb.classList.add("grid");
+  set("sb-issues",  allIssues.length);
+  set("sb-options", csvData.length);
+  set("sb-stats",   statCols.length);
+
+  const sb = el("stat-boxes");
+  if (sb) { sb.classList.remove("hidden"); sb.classList.add("grid"); }
 
   updatePriorityCoverage();
   renderTopPicks();
   renderPriorityList();
 
-  document.getElementById("scorer-upload-notice").classList.add("hidden");
-  document.getElementById("scorer-content").style.display = "";
+  const notice  = el("scorer-upload-notice");
+  const content = el("scorer-content");
+  if (notice)  notice.classList.add("hidden");
+  if (content) content.style.display = "";
   renderIssueList();
 }
 
@@ -142,16 +150,16 @@ document.querySelectorAll("[data-sort]").forEach(chip => {
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
-document.getElementById("prio-search").addEventListener("input", renderPriorityList);
-document.getElementById("issue-search").addEventListener("input", () => {
+el("prio-search").addEventListener("input", renderPriorityList);
+el("issue-search").addEventListener("input", () => {
   clearTimeout(window._issueTimer);
   window._issueTimer = setTimeout(renderIssueList, 200);
 });
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
 
-document.getElementById("export-cfg-btn").addEventListener("click", exportPriorityCfg);
-document.getElementById("reset-prio-btn").addEventListener("click", () => {
+el("export-cfg-btn").addEventListener("click", exportPriorityCfg);
+el("reset-prio-btn").addEventListener("click", () => {
   if (!confirm("Reset all priorities to defaults?")) return;
   resetPriorities();
   renderPriorityList();
