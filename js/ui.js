@@ -44,23 +44,11 @@ function renderPriorityList() {
       const name = decodeURIComponent(e.target.dataset.name);
       priorities[name] = parseInt(e.target.value, 10);
       renderPriorityList();
-      updatePriorityCoverage();
       if (csvData) renderIssueList();
     });
   });
 }
 
-function updatePriorityCoverage() {
-  const names   = Object.keys(priorities);
-  const matched = names.filter(n => !!resolveCol(n)).length;
-  const total   = statCols.length || names.length;
-  const pct     = total ? Math.round((matched / total) * 100) : 0;
-  document.getElementById("prio-coverage").style.width = pct + "%";
-  document.getElementById("prio-coverage-label").textContent =
-    total
-      ? `Coverage: ${names.length} stats configured · ${matched} matched to CSV columns`
-      : "Coverage: load CSV to see stats";
-}
 
 // ── Issue List ────────────────────────────────────────────────────────────────
 
