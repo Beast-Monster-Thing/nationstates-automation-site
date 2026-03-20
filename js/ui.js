@@ -1,6 +1,5 @@
 /**
  * ui.js — Sovereign Ledger
- * All DOM rendering: priority list, issue cards, option rows.
  */
 
 let prioFilter = "all";
@@ -19,7 +18,7 @@ function renderPriorityList() {
   entries.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
 
   if (!entries.length) {
-    list.innerHTML = `<p class="text-center text-on-surface-variant text-sm py-6">No stats loaded yet — waiting for CSV.</p>`;
+    list.innerHTML = `<p style="text-align:center;color:#74777f;font-size:13px;padding:24px 0">No stats loaded yet.</p>`;
     return;
   }
 
@@ -48,7 +47,6 @@ function renderPriorityList() {
     });
   });
 }
-
 
 // ── Issue List ────────────────────────────────────────────────────────────────
 
