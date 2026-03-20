@@ -1,190 +1,88 @@
 /**
- * main.js — Sovereign Ledger (no sidebar)
+ * priorities.js
+ * Default priority data (from priority.cfg) and priority state management.
  */
 
-const CSV_URL = "ns_results.csv";
+const DEFAULT_PRIORITIES = [
+  ["Religiousness",              99],
+  ["Defense Forces",             97],
+  ["Law Enforcement",            96],
+  ["Authoritarianism",           95],
+  ["Compliance",                 94],
+  ["Taxation",                   92],
+  ["Government Size",            90],
+  ["Influence",                  90],
+  ["Social Conservatism",        88],
+  ["Arms Manufacturing",         87],
+  ["Ideological Radicality",     85],
+  ["Weaponization",              85],
+  ["Information Technology",     82],
+  ["Culture",                    80],
+  ["Intelligence",               78],
+  ["Economy",                    75],
+  ["Agriculture",                70],
+  ["Population",                 68],
+  ["Manufacturing",              65],
+  ["Book Publishing",            60],
+  ["Scientific Advancement",     58],
+  ["Mining",                     55],
+  ["Employment",                 50],
+  ["Health",                     48],
+  ["Political Apathy",           45],
+  ["Ignorance",                  40],
+  ["Foreign Aid",                38],
+  ["Wealth Gaps",                35],
+  ["Average Income of Rich",     32],
+  ["World Assembly Endorsements",30],
+  ["Integrity",                  28],
+  ["Residency",                  25],
+  ["Public Education",           22],
+  ["Automobile Manufacturing",   20],
+  ["Tourism",                    18],
+  ["Civil Rights",              -95],
+  ["Political Freedom",         -92],
+  ["Secularism",                -90],
+  ["Freedom From Taxation",     -88],
+  ["Pacifism",                  -85],
+  ["Inclusiveness",             -70],
+  ["Economic Freedom",          -65],
+  ["Youth Rebelliousness",      -60],
+  ["Black Market",              -50],
+  ["Crime",                     -48],
+  ["Recreational Drug Use",     -40],
+  ["Gambling",                  -35],
+  ["Nudity",                    -30],
+  ["Corruption",                -25],
+  ["Income Equality",           -20],
+  ["Eco-Friendliness",          -10],
+];
 
-function el(id) { return document.getElementById(id); }
+// Live priority state: { statName: score }
+let priorities = {};
+DEFAULT_PRIORITIES.forEach(([name]) => { priorities[name] = 0; });
 
-function showLoading(msg) {
-  el("loading-msg").textContent = msg;
-  el("loading-overlay").classList.add("show");
-}
-function hideLoading() {
-  el("loading-overlay").classList.remove("show");
-}
-
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-
-document.querySelectorAll(".tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab-active"));
-    document.querySelectorAll(".panel").forEach(p => p.classList.remove("panel-active"));
-    tab.classList.add("tab-active");
-    el("tab-" + tab.dataset.tab).classList.add("panel-active");
-  });
-});
-
-// ── Auto-fetch CSV ────────────────────────────────────────────────────────────
-
-function fetchCSV() {
-  showLoading("Loading ns_results.csv…");
-  Papa.parse(CSV_URL, {
-    download: true,
-    header: true,
-    dynamicTyping: true,
-    skipEmptyLines: true,
-    complete(results) {
-      processCSV(results);
-      onDataLoaded();
-      hideLoading();
-    },
-    error(err) {
-      hideLoading();
-      console.warn("Auto-fetch failed:", err);
-      const n = el("scorer-upload-notice");
-      if (n) n.classList.remove("hidden");
-    },
-  });
-}
-
-// ── Post-load UI ──────────────────────────────────────────────────────────────
-
-function set(id, val) { const e = el(id); if (e) e.textContent = val; }
-
-function onDataLoaded() {
-  const badge = el("data-badge");
-  if (badge) { badge.classList.remove("hidden"); badge.classList.add("flex"); }
-  set("data-badge-text", `${allIssues.length} issues · ${statCols.length} stats`);
-
-  updatePriorityCoverage();
-  renderPriorityList();
-  renderIssueList();
-}
-
-// ── Filter chips ──────────────────────────────────────────────────────────────
-
-document.querySelectorAll("[data-filter]").forEach(chip => {
-  chip.addEventListener("click", () => {
-    document.querySelectorAll("[data-filter]").forEach(c => c.classList.remove("chip-active"));
-    chip.classList.add("chip-active");
-    prioFilter = chip.dataset.filter;
-    renderPriorityList();
-  });
-});
-
-document.querySelectorAll("[data-sort]").forEach(chip => {
-  chip.addEventListener("click", () => {
-    document.querySelectorAll("[data-sort]").forEach(c => c.classList.remove("chip-active"));
-    chip.classList.add("chip-active");
-    sortMode = chip.dataset.sort;
-    renderIssueList();
-  });
-});
-
-// ── Search ────────────────────────────────────────────────────────────────────
-
-el("prio-search").addEventListener("input", renderPriorityList);
-el("issue-search").addEventListener("input", () => {
-  clearTimeout(window._issueTimer);
-  window._issueTimer = setTimeout(renderIssueList, 200);
-});
-
-// ── CFG Parsing ───────────────────────────────────────────────────────────────
-
-function parseCfgText(text) {
-  const result = {};
-  let parsed = 0;
-  for (const raw of text.split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    // Accept both em-dash (—) and plain hyphen as separator
-    const sep = line.includes("—") ? "—" : null;
-    let name, scoreStr;
-    if (sep) {
-      const parts = line.split("—");
-      name      = parts[0].trim();
-      scoreStr  = parts[1]?.trim();
-    } else {
-      // fallback: last token is the number
-      const parts = line.rsplit ? line.rsplit(" ", 1) : line.split(" ");
-      scoreStr = parts[parts.length - 1];
-      name     = line.slice(0, line.lastIndexOf(scoreStr)).trim().replace(/-+$/, "").trim();
-    }
-    const score = parseFloat(scoreStr);
-    if (name && !isNaN(score)) { result[name] = score; parsed++; }
-  }
-  return { result, parsed };
+function resetPriorities() {
+  priorities = {};
+  DEFAULT_PRIORITIES.forEach(([name]) => { priorities[name] = 0; });
 }
 
-function applyCfg(text) {
-  const { result, parsed } = parseCfgText(text);
-  if (parsed === 0) return "No valid entries found. Check the format: StatName — score";
-  priorities = result;
-  renderPriorityList();
-  updatePriorityCoverage();
-  if (csvData) renderIssueList();
-  return null; // no error
+function exportPriorityCfg() {
+  const lines = [
+    "# NationStates stat priority list",
+    "# Format: Stat Name — score",
+    "# Positive score = want this stat HIGHER",
+    "# Negative score = want this stat LOWER",
+    "# Absolute value determines priority weight",
+    "# Stats not listed here are ignored entirely",
+    "",
+  ];
+  Object.entries(priorities)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .forEach(([name, score]) => lines.push(`${name} — ${score}`));
+
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "priority.cfg";
+  a.click();
 }
-
-// ── Import via file ───────────────────────────────────────────────────────────
-
-const cfgFileInput = el("cfg-file-input");
-
-el("import-cfg-btn").addEventListener("click", () => cfgFileInput.click());
-
-cfgFileInput.addEventListener("change", () => {
-  const file = cfgFileInput.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const err = applyCfg(e.target.result);
-    if (err) alert(err);
-  };
-  reader.readAsText(file);
-  cfgFileInput.value = "";
-});
-
-// ── Import via paste ──────────────────────────────────────────────────────────
-
-el("paste-cfg-btn").addEventListener("click", () => {
-  el("paste-modal").classList.remove("hidden");
-  el("paste-textarea").focus();
-  el("paste-error").classList.add("hidden");
-  el("paste-error").textContent = "";
-});
-
-el("paste-cancel-btn").addEventListener("click", () => {
-  el("paste-modal").classList.add("hidden");
-  el("paste-textarea").value = "";
-});
-
-el("paste-apply-btn").addEventListener("click", () => {
-  const text = el("paste-textarea").value.trim();
-  if (!text) return;
-  const err = applyCfg(text);
-  if (err) {
-    el("paste-error").textContent = err;
-    el("paste-error").classList.remove("hidden");
-  } else {
-    el("paste-modal").classList.add("hidden");
-    el("paste-textarea").value = "";
-  }
-});
-
-// ── Buttons ───────────────────────────────────────────────────────────────────
-
-el("export-cfg-btn").addEventListener("click", exportPriorityCfg);
-el("reset-prio-btn").addEventListener("click", () => {
-  if (!confirm("Reset all priorities to defaults?")) return;
-  resetPriorities();
-  renderPriorityList();
-  updatePriorityCoverage();
-  if (csvData) renderIssueList();
-});
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-
-renderPriorityList();
-updatePriorityCoverage();
-fetchCSV();
