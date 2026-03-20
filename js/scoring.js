@@ -19,6 +19,9 @@ function processCSV(results) {
   const cols = Object.keys(csvData[0]);
   statCols = cols.slice(4);
 
+  // Initialise priority slots from CSV columns (score = 0 for any new stat)
+  initPrioritiesFromCols(statCols);
+
   // Standard deviations per stat (population std)
   statStds = {};
   statCols.forEach(col => {
