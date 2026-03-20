@@ -60,7 +60,7 @@
     };
   </script>
 </head>
-<body class="bg-surface font-body text-on-surface min-h-screen flex overflow-hidden">
+<body class="bg-surface-container-low font-body text-on-surface min-h-screen flex flex-col">
 
 <!-- Loading Overlay -->
 <div id="loading-overlay" class="hidden fixed inset-0 bg-surface/90 backdrop-blur-sm z-[200] place-items-center">
@@ -70,247 +70,123 @@
   </div>
 </div>
 
-<!-- Sidebar -->
-<aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest flex flex-col z-50 shadow-ambient">
-  <div class="px-6 pt-8 pb-4">
-    <p class="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-outline mb-1.5">Nation Management</p>
-    <h1 class="font-headline text-xl font-extrabold text-primary uppercase tracking-tight leading-tight">Sovereign<br>Ledger</h1>
-    <p id="sidebar-status" class="text-[0.6rem] uppercase tracking-[0.05em] text-outline mt-2.5">No data loaded</p>
-  </div>
-
-  <nav class="flex-1 px-3 mt-2 space-y-0.5">
-    <div class="nav-item nav-active" data-tab="overview">
-      <span class="material-symbols-outlined nav-icon">dashboard</span>
-      <span>Overview</span>
+<!-- Glassmorphism Header -->
+<header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
+  <div class="flex items-center justify-between h-16 px-8 max-w-6xl mx-auto">
+    <div class="flex items-center gap-8">
+      <h1 class="font-headline text-lg font-extrabold text-primary uppercase tracking-tight">Sovereign Ledger</h1>
+      <nav class="flex gap-1">
+        <div class="tab tab-active" data-tab="priorities">Priorities</div>
+        <div class="tab" data-tab="scorer">Issue Scorer</div>
+      </nav>
     </div>
-    <div class="nav-item" data-tab="priorities">
-      <span class="material-symbols-outlined nav-icon">tune</span>
-      <span>Priorities</span>
-    </div>
-    <div class="nav-item" data-tab="scorer">
-      <span class="material-symbols-outlined nav-icon">gavel</span>
-      <span>Issue Scorer</span>
-    </div>
-    <div class="nav-item" data-tab="setup">
-      <span class="material-symbols-outlined nav-icon">terminal</span>
-      <span>Setup</span>
-    </div>
-  </nav>
-
-  <div class="px-3 pb-6 pt-4 border-t border-outline-variant/20">
-    <div class="flex items-center p-3 rounded-xl bg-surface-container-high/60">
-      <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary text-xs font-bold flex-shrink-0">NS</div>
-      <div class="ml-3 min-w-0">
-        <p class="text-xs font-bold text-on-surface">Issue Bot</p>
-        <p class="text-[0.6rem] uppercase tracking-tighter text-on-surface-variant">Automated Scoring</p>
-      </div>
+    <div id="data-badge" class="hidden items-center gap-2 bg-surface-container-low px-4 py-1.5 rounded-full">
+      <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+      <span id="data-badge-text" class="text-[0.6875rem] font-bold uppercase tracking-wide text-on-surface-variant"></span>
     </div>
   </div>
-</aside>
+</header>
 
-<!-- Main -->
-<main class="ml-64 flex-1 flex flex-col h-screen overflow-hidden">
+<!-- Content -->
+<div class="flex-1">
 
-  <!-- Glassmorphism Header -->
-  <header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/80 backdrop-blur-md shadow-sm">
-    <div class="flex justify-between items-center h-16 px-8">
-      <h2 id="page-title" class="font-headline text-lg font-extrabold text-primary uppercase tracking-tight">Overview</h2>
-      <div id="data-badge" class="hidden items-center gap-2 bg-surface-container-low px-4 py-1.5 rounded-full">
-        <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-        <span id="data-badge-text" class="text-[0.6875rem] font-bold uppercase tracking-wide text-on-surface-variant"></span>
-      </div>
-    </div>
-  </header>
+  <!-- PRIORITIES -->
+  <div class="panel panel-active" id="tab-priorities">
+    <div class="p-8 max-w-4xl mx-auto">
+      <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
+        <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-6">Priority Config Editor</p>
 
-  <!-- Scrollable content -->
-  <div class="mt-16 flex-1 overflow-y-auto bg-surface-container-low">
-
-    <!-- OVERVIEW -->
-    <div class="panel panel-active" id="tab-overview">
-      <div class="p-8 max-w-6xl mx-auto">
-
-        <!-- Upload -->
-        <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm mb-8">
-          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">Data Source</p>
-          <div id="csv-loaded-notice" class="hidden items-center gap-3 bg-green-50 rounded-xl px-5 py-4">
-            <span class="material-symbols-outlined text-green-600">check_circle</span>
-            <p class="text-sm font-semibold text-green-800">ns_results.csv loaded from repository</p>
-          </div>
-          <div id="drop-zone" class="upload-zone rounded-xl cursor-pointer text-center py-10 px-6">
-            <span class="material-symbols-outlined text-4xl text-outline/40 mb-3 block" style="font-size:2.5rem">upload_file</span>
-            <p class="font-headline font-bold text-on-surface">Drop <span class="text-primary">ns_results.csv</span> here</p>
-            <p class="text-sm text-on-surface-variant mt-1">or click to browse — file stays in your browser</p>
-          </div>
-          <input type="file" id="file-input" accept=".csv" class="hidden">
+        <div class="flex gap-2 mb-5">
+          <button class="chip chip-active" data-filter="all">All</button>
+          <button class="chip" data-filter="pos">Maximize</button>
+          <button class="chip" data-filter="neg">Minimize</button>
         </div>
 
-        <!-- Stat boxes -->
-        <div id="stat-boxes" class="hidden grid-cols-3 gap-6 mb-8">
-          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm text-center">
-            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline mb-2">Unique Issues</p>
-            <p id="sb-issues" class="font-headline text-4xl font-black text-primary">—</p>
-          </div>
-          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm text-center">
-            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline mb-2">Total Options</p>
-            <p id="sb-options" class="font-headline text-4xl font-black text-primary">—</p>
-          </div>
-          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm text-center">
-            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline mb-2">Census Stats</p>
-            <p id="sb-stats" class="font-headline text-4xl font-black text-primary">—</p>
-          </div>
+        <div class="relative mb-5">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none" style="font-size:1.1rem">search</span>
+          <input id="prio-search" type="text" placeholder="Filter stats…"
+            class="w-full bg-surface-container-low rounded-full pl-11 pr-5 py-3 text-sm text-on-surface placeholder:text-outline/50 outline-none focus:bg-surface-container-lowest transition-all prio-input">
         </div>
 
-        <!-- 60/40 split -->
-        <div class="grid grid-cols-5 gap-6">
-          <div id="top-picks-card" class="col-span-3 bg-surface-container-lowest rounded-2xl p-6 shadow-sm hidden">
-            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-5">Top Picks — Current Priorities</p>
-            <div id="top-picks-body"></div>
-          </div>
-          <div class="col-span-2 bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
-            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-5">Priority Distribution</p>
-            <p class="text-[0.6875rem] font-bold uppercase tracking-widest text-green-600 mb-3">▲ Maximize</p>
-            <div id="pos-preview" class="space-y-1.5 mb-5"></div>
-            <p class="text-[0.6875rem] font-bold uppercase tracking-widest text-error mb-3">▼ Minimize</p>
-            <div id="neg-preview" class="space-y-1.5"></div>
-          </div>
+        <div class="flex gap-3 mb-6 flex-wrap">
+          <button id="export-cfg-btn" class="btn-primary">
+            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">download</span>
+            Export priority.cfg
+          </button>
+          <button id="import-cfg-btn" class="btn-secondary">
+            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">upload_file</span>
+            Import .cfg file
+          </button>
+          <button id="paste-cfg-btn" class="btn-secondary">
+            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">content_paste</span>
+            Paste config
+          </button>
+          <button id="reset-prio-btn" class="btn-secondary">
+            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">restart_alt</span>
+            Reset to Default
+          </button>
         </div>
 
-      </div>
-    </div>
+        <input type="file" id="cfg-file-input" accept=".cfg,.txt" class="hidden">
 
-    <!-- PRIORITIES -->
-    <div class="panel" id="tab-priorities">
-      <div class="p-8 max-w-4xl mx-auto">
-        <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
-          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-6">Priority Config Editor</p>
-
-          <div class="flex gap-2 mb-5">
-            <button class="chip chip-active" data-filter="all">All</button>
-            <button class="chip" data-filter="pos">Maximize</button>
-            <button class="chip" data-filter="neg">Minimize</button>
-          </div>
-
-          <div class="relative mb-5">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none" style="font-size:1.1rem">search</span>
-            <input id="prio-search" type="text" placeholder="Filter stats…"
-              class="w-full bg-surface-container-low rounded-full pl-11 pr-5 py-3 text-sm text-on-surface placeholder:text-outline/50 outline-none focus:bg-surface-container-lowest transition-all prio-input">
-          </div>
-
-          <div class="flex gap-3 mb-6">
-            <button id="export-cfg-btn" class="btn-primary">
-              <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">download</span>
-              Export priority.cfg
-            </button>
-            <button id="reset-prio-btn" class="btn-secondary">
-              <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">restart_alt</span>
-              Reset to Default
-            </button>
-          </div>
-
-          <div class="bg-surface-container-low rounded-full h-1.5 mb-2 overflow-hidden">
-            <div id="prio-coverage" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(135deg,#002046,#1b365d)"></div>
-          </div>
-          <p id="prio-coverage-label" class="text-[0.6rem] uppercase tracking-[0.1em] text-outline mb-6">Coverage: —</p>
-
-          <div id="priority-list" class="space-y-1.5 max-h-[560px] overflow-y-auto pr-1 custom-scroll"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SCORER -->
-    <div class="panel" id="tab-scorer">
-      <div class="p-8 max-w-5xl mx-auto">
-
-        <div id="scorer-upload-notice" class="hidden bg-surface-container-lowest rounded-2xl p-8 shadow-sm mb-6">
-          <p class="text-sm text-on-surface-variant">Go to <strong class="text-primary">Overview</strong> and load <code class="text-primary bg-surface-container-low px-1.5 py-0.5 rounded text-xs">ns_results.csv</code> first.</p>
-        </div>
-
-        <div id="scorer-content">
-          <div class="relative mb-6">
-            <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-primary pointer-events-none">search</span>
-            <input id="issue-search" type="text" placeholder="Search issue number or title…"
-              class="w-full h-14 bg-surface-container-lowest rounded-full pl-14 pr-6 font-headline font-bold text-primary text-base placeholder:text-outline/40 outline-none shadow-sm focus:shadow-md transition-all">
-          </div>
-
-          <div class="flex gap-2 mb-6">
-            <button class="chip chip-active" data-sort="num">By Number</button>
-            <button class="chip" data-sort="best">Best Score First</button>
-            <button class="chip" data-sort="worst">Worst Score First</button>
-          </div>
-
-          <div id="issue-results" class="space-y-6">
-            <p class="text-center text-on-surface-variant text-sm py-10">Load ns_results.csv to see issues</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SETUP -->
-    <div class="panel" id="tab-setup">
-      <div class="p-8 max-w-5xl mx-auto space-y-6">
-
-        <div class="grid grid-cols-2 gap-6">
-          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
-            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">.env Configuration</p>
-            <pre class="code-block"><span class="text-outline"># Required</span>
-<span class="text-primary font-semibold">NATION</span>=your_nation_name
-<span class="text-primary font-semibold">PASSWORD</span>=your_ns_password
-<span class="text-primary font-semibold">USER_AGENT</span>=YourBot/1.0 (you@email.com)
-
-<span class="text-outline"># Optional</span>
-<span class="text-primary font-semibold">SLEEP_BETWEEN_REQUESTS</span>=10
-<span class="text-primary font-semibold">TEST_MODE</span>=false</pre>
-          </div>
-          <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
-            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">Install &amp; Run</p>
-            <pre class="code-block"><span class="text-outline"># Install dependencies</span>
-pip install -r requirements.txt
-
-<span class="text-outline"># Run once</span>
-python main.py
-
-<span class="text-outline"># Cron — daily at 8 AM</span>
-0 8 * * * cd /path/to/bot \
-  &amp;&amp; python main.py</pre>
-          </div>
-        </div>
-
-        <div class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm">
-          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-6">Scoring Algorithm</p>
-          <div class="grid grid-cols-2 gap-8">
-            <div class="text-sm text-on-surface-variant leading-relaxed space-y-3">
-              <p>Each option is scored by looking up census stat deltas in <code class="text-primary bg-surface-container-low px-1.5 py-0.5 rounded text-xs">ns_results.csv</code>, combined using weights from <code class="text-primary bg-surface-container-low px-1.5 py-0.5 rounded text-xs">priority.cfg</code>.</p>
-              <p>Higher absolute priority = more weight. Positive = want higher. Negative = want lower. Deltas are normalized by standard deviation.</p>
+        <!-- Paste modal -->
+        <div id="paste-modal" class="hidden">
+          <div class="bg-surface-container-low rounded-xl p-5 mb-6 border border-outline-variant/30">
+            <p class="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline mb-3">Paste priority.cfg contents</p>
+            <textarea id="paste-textarea"
+              class="w-full bg-surface-container-lowest rounded-xl p-4 text-xs font-mono text-on-surface placeholder:text-outline/40 outline-none resize-none border border-outline-variant/20 focus:border-primary/30 transition-all"
+              rows="10"
+              placeholder="# Paste your priority.cfg here&#10;Religiousness — 99&#10;Defense Forces — 97&#10;Civil Rights — -95&#10;..."></textarea>
+            <div class="flex gap-3 mt-3">
+              <button id="paste-apply-btn" class="btn-primary">
+                <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:-3px">check</span>
+                Apply
+              </button>
+              <button id="paste-cancel-btn" class="btn-secondary">Cancel</button>
             </div>
-            <div class="bg-surface-container-low rounded-xl p-5">
-              <p class="text-[0.6rem] uppercase tracking-widest text-outline font-bold mb-3">Formula</p>
-              <pre class="text-xs text-primary leading-relaxed">for each configured stat:
-  norm   = delta / std_dev
-  dir    = norm × sign(priority)
-  weight = rank_by_abs_priority
-  score += weight × dir
-
-→ pick highest total score</pre>
-            </div>
+            <p id="paste-error" class="hidden text-xs text-error mt-2"></p>
           </div>
         </div>
 
-        <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm">
-          <p class="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-outline mb-4">File Structure</p>
-          <pre class="code-block">project/
-├── <span class="text-primary font-semibold">main.py</span>           — bot logic
-├── <span class="text-primary font-semibold">priority.cfg</span>      — stat priorities
-├── <span class="text-primary font-semibold">ns_results.csv</span>    — precomputed deltas
-├── <span class="text-primary font-semibold">.env</span>              — credentials (never commit!)
-├── <span class="text-primary font-semibold">requirements.txt</span>
-└── <span class="text-primary font-semibold">choices.ndjson</span>    — auto decision log</pre>
+        <div class="bg-surface-container-low rounded-full h-1.5 mb-2 overflow-hidden">
+          <div id="prio-coverage" class="h-full rounded-full transition-all" style="width:0%;background:linear-gradient(135deg,#002046,#1b365d)"></div>
         </div>
+        <p id="prio-coverage-label" class="text-[0.6rem] uppercase tracking-[0.1em] text-outline mb-6">Coverage: —</p>
 
+        <div id="priority-list" class="space-y-1.5 max-h-[600px] overflow-y-auto pr-1 custom-scroll"></div>
       </div>
     </div>
-
   </div>
-</main>
+
+  <!-- SCORER -->
+  <div class="panel" id="tab-scorer">
+    <div class="p-8 max-w-5xl mx-auto">
+
+      <div id="scorer-upload-notice" class="hidden bg-surface-container-lowest rounded-2xl p-8 shadow-sm mb-6">
+        <p class="text-sm text-on-surface-variant">The CSV is loaded automatically from the repository. If it fails, refresh the page.</p>
+      </div>
+
+      <div id="scorer-content">
+        <div class="relative mb-6">
+          <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-primary pointer-events-none">search</span>
+          <input id="issue-search" type="text" placeholder="Search issue number or title…"
+            class="w-full h-14 bg-surface-container-lowest rounded-full pl-14 pr-6 font-headline font-bold text-primary text-base placeholder:text-outline/40 outline-none shadow-sm focus:shadow-md transition-all">
+        </div>
+
+        <div class="flex gap-2 mb-6">
+          <button class="chip chip-active" data-sort="num">By Number</button>
+          <button class="chip" data-sort="best">Best Score First</button>
+          <button class="chip" data-sort="worst">Worst Score First</button>
+        </div>
+
+        <div id="issue-results" class="space-y-4">
+          <p class="text-center text-on-surface-variant text-sm py-10">Loading data…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="js/priorities.js"></script>

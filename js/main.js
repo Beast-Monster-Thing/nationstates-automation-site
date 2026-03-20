@@ -1,17 +1,8 @@
 /**
- * main.js — Sovereign Ledger
- * Auto-loads ns_results.csv from repo. Manual upload as fallback.
+ * main.js — Sovereign Ledger (no sidebar)
  */
 
 const CSV_URL = "ns_results.csv";
-const PAGE_TITLES = {
-  overview:   "Overview",
-  priorities: "Priority Editor",
-  scorer:     "Issue Scorer",
-  setup:      "Setup",
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function el(id) { return document.getElementById(id); }
 
@@ -25,18 +16,12 @@ function hideLoading() {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
-document.querySelectorAll(".nav-item").forEach(item => {
-  item.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("nav-active"));
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("tab-active"));
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("panel-active"));
-    item.classList.add("nav-active");
-    el("tab-" + item.dataset.tab).classList.add("panel-active");
-    el("page-title").textContent = PAGE_TITLES[item.dataset.tab] || "";
-
-    if (item.dataset.tab === "scorer" && !csvData) {
-      el("scorer-upload-notice").classList.remove("hidden");
-      el("scorer-content").style.display = "none";
-    }
+    tab.classList.add("tab-active");
+    el("tab-" + tab.dataset.tab).classList.add("panel-active");
   });
 });
 
@@ -53,48 +38,14 @@ function fetchCSV() {
       processCSV(results);
       onDataLoaded();
       hideLoading();
-
-      const dz     = el("drop-zone");
-      const notice = el("csv-loaded-notice");
-      if (dz)     dz.style.display = "none";
-      if (notice) { notice.classList.remove("hidden"); notice.classList.add("flex"); }
     },
     error(err) {
       hideLoading();
-      console.warn("Auto-fetch failed, showing manual upload:", err);
+      console.warn("Auto-fetch failed:", err);
+      const n = el("scorer-upload-notice");
+      if (n) n.classList.remove("hidden");
     },
   });
-}
-
-// ── Manual upload fallback ────────────────────────────────────────────────────
-
-const dropZone  = el("drop-zone");
-const fileInput = el("file-input");
-
-if (dropZone && fileInput) {
-  dropZone.addEventListener("click",     () => fileInput.click());
-  dropZone.addEventListener("dragover",  e  => { e.preventDefault(); dropZone.classList.add("drag"); });
-  dropZone.addEventListener("dragleave", ()  => dropZone.classList.remove("drag"));
-  dropZone.addEventListener("drop", e => {
-    e.preventDefault();
-    dropZone.classList.remove("drag");
-    const f = e.dataTransfer.files[0];
-    if (f) loadCSVFile(f);
-  });
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files[0]) loadCSVFile(fileInput.files[0]);
-  });
-}
-
-function loadCSVFile(file) {
-  showLoading(`Parsing ${file.name}…`);
-  setTimeout(() => {
-    Papa.parse(file, {
-      header: true, dynamicTyping: true, skipEmptyLines: true,
-      complete(results) { processCSV(results); onDataLoaded(); hideLoading(); },
-      error(err)        { hideLoading(); alert("CSV parse error: " + err.message); },
-    });
-  }, 50);
 }
 
 // ── Post-load UI ──────────────────────────────────────────────────────────────
@@ -102,33 +53,16 @@ function loadCSVFile(file) {
 function set(id, val) { const e = el(id); if (e) e.textContent = val; }
 
 function onDataLoaded() {
-  const summary = `${allIssues.length} issues · ${csvData.length} options · ${statCols.length} stats`;
-
-  set("sidebar-status", `${allIssues.length} issues loaded`);
-
   const badge = el("data-badge");
   if (badge) { badge.classList.remove("hidden"); badge.classList.add("flex"); }
-  set("data-badge-text", summary);
-
-  set("sb-issues",  allIssues.length);
-  set("sb-options", csvData.length);
-  set("sb-stats",   statCols.length);
-
-  const sb = el("stat-boxes");
-  if (sb) { sb.classList.remove("hidden"); sb.classList.add("grid"); }
+  set("data-badge-text", `${allIssues.length} issues · ${statCols.length} stats`);
 
   updatePriorityCoverage();
-  renderTopPicks();
   renderPriorityList();
-
-  const notice  = el("scorer-upload-notice");
-  const content = el("scorer-content");
-  if (notice)  notice.classList.add("hidden");
-  if (content) content.style.display = "";
   renderIssueList();
 }
 
-// ── Chips ─────────────────────────────────────────────────────────────────────
+// ── Filter chips ──────────────────────────────────────────────────────────────
 
 document.querySelectorAll("[data-filter]").forEach(chip => {
   chip.addEventListener("click", () => {
@@ -156,6 +90,88 @@ el("issue-search").addEventListener("input", () => {
   window._issueTimer = setTimeout(renderIssueList, 200);
 });
 
+// ── CFG Parsing ───────────────────────────────────────────────────────────────
+
+function parseCfgText(text) {
+  const result = {};
+  let parsed = 0;
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    // Accept both em-dash (—) and plain hyphen as separator
+    const sep = line.includes("—") ? "—" : null;
+    let name, scoreStr;
+    if (sep) {
+      const parts = line.split("—");
+      name      = parts[0].trim();
+      scoreStr  = parts[1]?.trim();
+    } else {
+      // fallback: last token is the number
+      const parts = line.rsplit ? line.rsplit(" ", 1) : line.split(" ");
+      scoreStr = parts[parts.length - 1];
+      name     = line.slice(0, line.lastIndexOf(scoreStr)).trim().replace(/-+$/, "").trim();
+    }
+    const score = parseFloat(scoreStr);
+    if (name && !isNaN(score)) { result[name] = score; parsed++; }
+  }
+  return { result, parsed };
+}
+
+function applyCfg(text) {
+  const { result, parsed } = parseCfgText(text);
+  if (parsed === 0) return "No valid entries found. Check the format: StatName — score";
+  priorities = result;
+  renderPriorityList();
+  updatePriorityCoverage();
+  if (csvData) renderIssueList();
+  return null; // no error
+}
+
+// ── Import via file ───────────────────────────────────────────────────────────
+
+const cfgFileInput = el("cfg-file-input");
+
+el("import-cfg-btn").addEventListener("click", () => cfgFileInput.click());
+
+cfgFileInput.addEventListener("change", () => {
+  const file = cfgFileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const err = applyCfg(e.target.result);
+    if (err) alert(err);
+  };
+  reader.readAsText(file);
+  cfgFileInput.value = "";
+});
+
+// ── Import via paste ──────────────────────────────────────────────────────────
+
+el("paste-cfg-btn").addEventListener("click", () => {
+  el("paste-modal").classList.remove("hidden");
+  el("paste-textarea").focus();
+  el("paste-error").classList.add("hidden");
+  el("paste-error").textContent = "";
+});
+
+el("paste-cancel-btn").addEventListener("click", () => {
+  el("paste-modal").classList.add("hidden");
+  el("paste-textarea").value = "";
+});
+
+el("paste-apply-btn").addEventListener("click", () => {
+  const text = el("paste-textarea").value.trim();
+  if (!text) return;
+  const err = applyCfg(text);
+  if (err) {
+    el("paste-error").textContent = err;
+    el("paste-error").classList.remove("hidden");
+  } else {
+    el("paste-modal").classList.add("hidden");
+    el("paste-textarea").value = "";
+  }
+});
+
 // ── Buttons ───────────────────────────────────────────────────────────────────
 
 el("export-cfg-btn").addEventListener("click", exportPriorityCfg);
@@ -164,12 +180,11 @@ el("reset-prio-btn").addEventListener("click", () => {
   resetPriorities();
   renderPriorityList();
   updatePriorityCoverage();
-  if (csvData) { renderTopPicks(); renderIssueList(); }
+  if (csvData) renderIssueList();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-renderPriorityPreviews();
 renderPriorityList();
 updatePriorityCoverage();
 fetchCSV();
