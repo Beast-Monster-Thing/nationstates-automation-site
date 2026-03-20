@@ -58,7 +58,6 @@ function onDataLoaded() {
   if (badge) { badge.classList.remove("hidden"); badge.classList.add("flex"); }
   set("data-badge-text", `${allIssues.length} issues · ${statCols.length} stats`);
 
-  updatePriorityCoverage();
   renderPriorityList();
   renderIssueList();
 }
@@ -96,7 +95,6 @@ function applyCfg(text) {
     if (name in priorities) priorities[name] = score;
   });
   renderPriorityList();
-  updatePriorityCoverage();
   if (csvData) renderIssueList();
   return null;
 }
@@ -178,12 +176,10 @@ el("reset-prio-btn").addEventListener("click", () => {
   if (!confirm("Reset all priorities to 0?")) return;
   resetPriorities();
   renderPriorityList();
-  updatePriorityCoverage();
   if (csvData) renderIssueList();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 renderPriorityList();
-updatePriorityCoverage();
 fetchCSV();
